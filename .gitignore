@@ -1,0 +1,17 @@
+# secrets - never commit
+client_secret*.json
+mcp-google-ads.yaml
+adc.json
+*.pem
+.env*
+google-ads.yaml
+
+# working output
+out/
+*.local.md
+__pycache__/
+.pytest_cache/
+.venv/
+
+# private literals for tools/precommit-scan.sh
+.personal-denylist

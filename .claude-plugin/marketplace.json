@@ -1,0 +1,16 @@
+{
+  "name": "scg-ads-plugins",
+  "owner": { "name": "SCG" },
+  "metadata": {
+    "description": "Claude Code plugins for human + AI paid-media workflows."
+  },
+  "plugins": [
+    {
+      "name": "scg-ads",
+      "source": "./plugins/scg-ads",
+      "description": "Human + AI Google Ads pipeline: account setup, new campaigns, campaign updates. Uses the Google Ads MCP fork plus Python scripts for gaps.",
+      "version": "0.1.0",
+      "category": "marketing"
+    }
+  ]
+}

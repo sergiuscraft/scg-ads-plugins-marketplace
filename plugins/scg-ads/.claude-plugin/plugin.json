@@ -1,0 +1,7 @@
+{
+  "name": "scg-ads",
+  "version": "0.1.0",
+  "author": { "name": "SCG" },
+  "description": "Human + AI Google Ads pipeline (setup, new campaign, update) on top of the Google Ads MCP fork and bundled Python scripts.",
+  "keywords": ["google-ads", "ppc", "sem", "mcp"]
+}
