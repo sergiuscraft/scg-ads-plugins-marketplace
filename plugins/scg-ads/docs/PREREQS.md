@@ -1,9 +1,10 @@
 # Prerequisites
 
 ## 1. Google Ads MCP fork
-Clone/keep the fork (`google-ads-mcp-fork`) and export its path:
+Clone the fork and export its path:
 ```bash
-export GOOGLE_ADS_MCP_FORK_DIR=~/GitHub/google-ads-mcp/google-ads-mcp-fork
+git clone https://github.com/sergiuscraft/google-ads-mcp.git
+export GOOGLE_ADS_MCP_FORK_DIR="$PWD/google-ads-mcp"
 ```
 The plugin's `.mcp.json` starts it with `uv run --directory "$GOOGLE_ADS_MCP_FORK_DIR" -m ads_mcp.server`.
 If you already registered a `google-ads` server in your own MCP config, disable one of them to avoid duplicate tool names.
@@ -11,7 +12,7 @@ If you already registered a `google-ads` server in your own MCP config, disable 
 ## 2. Credentials (env only, never in this repo)
 | Var | Purpose |
 |---|---|
-| `GOOGLE_APPLICATION_CREDENTIALS` | ADC json with the `adwords` scope (e.g. `~/.config/google-ads-mcp/adc.json`, mode 600) |
+| `GOOGLE_APPLICATION_CREDENTIALS` | ADC json with the `adwords` scope (keep it outside any repo, mode 600) |
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | manager account id |
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | needed for scripts like Keyword Planner; the MCP also sends it if set |
 
