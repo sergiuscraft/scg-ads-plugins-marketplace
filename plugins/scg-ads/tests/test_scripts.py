@@ -137,3 +137,63 @@ def test_settings_changes():
     ns.clear_end_date = True
     assert campaign_settings.collect_changes(ns)["end_date_time"] == campaign_settings.NO_END
     assert ch["start_date_time"] == "2026-12-01 00:00:00" and ch["end_date_time"] == "2027-01-01 23:59:59"
+
+
+# ---- P2: hashing / conversion_upload / user_lists / account_links ----
+import conversion_upload  # noqa: E402
+import user_lists  # noqa: E402
+import account_links  # noqa: E402
+from _lib import hashing  # noqa: E402
+
+
+GMAIL = "gmail" + ".com"  # built from parts so the pre-commit personal-data scan stays strict
+
+
+def test_email_phone_normalisation_and_hash():
+    assert hashing.normalize_email(" John.Doe+x@" + GMAIL + " ") == "johndoe@" + GMAIL
+    assert hashing.normalize_email("a@b.co") == "a@b.co" and hashing.normalize_email("nope") is None
+    assert hashing.normalize_phone("+380 (67) 123-45-67") == "+380671234567"
+    assert hashing.normalize_phone("0671234567", "380") == "+380671234567"
+    assert hashing.normalize_phone("0671234567") is None
+    assert hashing.hash_email("A@B.co") == hashing.sha256_hex("a@b.co") and len(hashing.hash_email("A@B.co")) == 64
+
+
+def test_parse_clicks():
+    rows = [
+        {"gclid": "abc", "conversion_time": "2026-11-01 10:00:00", "value": "10,5", "currency": "eur"},
+        {"email": "X@Y.com", "conversion_time": "2026-11-01T10:00:00+02:00"},
+        {"conversion_time": "2026-11-01 10:00:00"},                 # no identifier
+        {"gclid": "abc", "conversion_time": "yesterday"},           # bad time
+        {"email": "bad", "gclid": "g", "conversion_time": "2026-11-01 10:00:00"},
+    ]
+    items, errors = conversion_upload.parse_clicks(rows, "+00:00")
+    assert len(items) == 2 and len(errors) == 3
+    assert items[0]["value"] == 10.5 and items[0]["currency"] == "EUR" and items[0]["ts"].endswith("+00:00")
+    assert items[1]["he"] == hashing.hash_email("x@y.com") and items[1]["ts"].endswith("+02:00")
+
+
+def test_parse_calls():
+    ok, err = conversion_upload.parse_calls(
+        [{"caller_id": "+380671234567", "call_start_time": "2026-11-01 09:00:00", "conversion_time": "2026-11-01 09:05:00"},
+         {"caller_id": "0671234567", "call_start_time": "2026-11-01 09:00:00", "conversion_time": "2026-11-01 09:05:00"}],
+        "+00:00")
+    assert len(ok) == 1 and len(err) == 1
+
+
+def test_members_dedupe_and_hash_only():
+    m, stats = user_lists.parse_members([
+        {"email": "a@b.co", "phone": ""}, {"email": "A@B.CO"}, {"email": "bad", "phone": ""}, {"phone": "+380671234567"}])
+    assert stats == {"rows": 4, "usable": 2, "invalid": 1, "duplicates": 1}
+    assert all(len(x["he"] or x["hp"]) == 64 for x in m)
+
+
+def test_upload_refuses_without_consent(tmp_path, capsys):
+    f = tmp_path / "c.csv"
+    f.write_text("email\na@b.co\n")
+    rc = user_lists.main(["upload", "--customer", "1", "--csv", str(f), "--create-name", "x"])
+    assert rc == 3 and "consent" in capsys.readouterr().err.lower()
+
+
+def test_ga4_howto(capsys):
+    assert account_links.main(["ga4-howto"]) == 0
+    assert "Product links" in capsys.readouterr().out

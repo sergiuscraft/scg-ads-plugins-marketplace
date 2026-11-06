@@ -21,8 +21,8 @@ MCP = google-ads server (fork). SCRIPT = `${CLAUDE_PLUGIN_ROOT}/scripts/`. Statu
 | Assets: sitelinks, callouts, snippets, images, video | MCP `assets_*`, `asset_links_*` | ready |
 | Audiences: attach existing lists | MCP `audiences_*` | ready |
 | Conversion actions | MCP `conversions_*` | ready |
-| Conversion uploads (offline / enhanced) | SCRIPT `conversion_upload.py` | planned P2 |
-| Account links (GA4, Merchant Center) | SCRIPT `account_links.py` | planned P2 |
-| User lists / Customer Match | SCRIPT `user_lists.py` | planned P2 |
+| Conversion uploads (offline click / call, enhanced via hashed email/phone) | SCRIPT `conversion_upload.py` | ready |
+| Account links: list, Merchant Center invite (human approves in Merchant Center); GA4 link is created on the GA4 side (`ga4-howto`) | SCRIPT `account_links.py` | ready |
+| User lists: list, create, Customer Match upload (local hashing, explicit consent flag) | SCRIPT `user_lists.py` | ready |
 | Display / PMax / Demand Gen / Shopping / Video | SCRIPT `campaign_create_other.py` | planned P3 |
 | Images / video creation | other MCPs (Higgsfield, Figma...) via `creatives` skill | ready (depends on connected MCPs) |

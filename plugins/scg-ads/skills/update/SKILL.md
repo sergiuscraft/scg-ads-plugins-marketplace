@@ -31,6 +31,8 @@ Write `out/update-<date>.md`: numbered findings with evidence (numbers), the pro
 | Dates, tracking, partner network | `campaign_settings.py` |
 | Audiences | `audiences_*` (OBSERVATION first) |
 | Assets | `assets_create_asset`, `asset_links_*`; images via `creatives` |
+| Offline conversions to improve bidding | `conversion_upload.py clicks|calls` (CSV with gclid or hashed email/phone) |
+| Audience lists refresh | `user_lists.py upload` (consent confirmation required) |
 
 Prioritise by impact; flag anything that resets learning (big bid strategy/budget changes, many ad swaps at once) and suggest staging.
 

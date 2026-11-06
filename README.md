@@ -25,7 +25,7 @@ No parameter syntax: commands discover accounts, campaigns and options from the 
 - **Safety**: dry run -> checksum -> explicit yes -> commit; new objects PAUSED. Same contract for MCP tools and scripts.
 
 ## Layout
-`plugins/scg-ads/` - `skills/` (setup, new-campaign, update, keywords, budget, creatives, propose-confirm), `commands/`, `scripts/` (Python via `uv run`: keyword_ideas, import_csv, create_ads, ad_schedule, campaign_settings), `templates/`, `docs/`, `tests/`.
+`plugins/scg-ads/` - `skills/` (setup, new-campaign, update, keywords, budget, creatives, propose-confirm), `commands/`, `scripts/` (Python via `uv run`: keyword_ideas, import_csv, create_ads, ad_schedule, campaign_settings, conversion_upload, user_lists, account_links), `templates/`, `docs/`, `tests/`.
 
 ## Tests
 ```bash
@@ -33,4 +33,4 @@ cd plugins/scg-ads && uv run --with pytest --with google-ads --with google-auth 
 ```
 
 ## Roadmap
-P2: `account_links.py`, `conversion_upload.py`, `user_lists.py`. P3: `campaign_create_other.py` (Display, PMax, Demand Gen, Shopping, Video). See `docs/TOOL-MAP.md`.
+P3: `campaign_create_other.py` (Display, PMax, Demand Gen, Shopping, Video). See `docs/TOOL-MAP.md`.

@@ -35,8 +35,10 @@ Campaigns (status, budget), conversion actions (status, primary, category), shar
 | Labels | `labels_manage_labels` |
 | Negative list skeleton | `shared_sets_create_negative_keyword_list` (see `keywords` skill for content) |
 
-Not covered by MCP - use scripts or the UI and say which:
-- Offline/enhanced conversion upload, account links (GA4, Merchant Center), user lists / Customer Match: P2 scripts (`conversion_upload.py`, `account_links.py`, `user_lists.py`) - if not present yet, give the human the exact UI path and a checklist item. Never pretend these were done.
+Not covered by MCP - use the scripts (same dry run -> approve -> `--apply --checksum` contract):
+- **User lists / Customer Match**: `uv run ${CLAUDE_PLUGIN_ROOT}/scripts/user_lists.py list|create|upload`. Before `upload`, ask the human in chat to confirm the contacts gave consent that meets Google's Customer Match policy; only then pass `--consent-confirmed`. Contacts CSV: `email`, `phone`. PII is hashed locally; never print or paste contact data into the chat.
+- **Offline conversions / enhanced conversions**: `scripts/conversion_upload.py clicks|calls` (the conversion action must be UPLOAD_CLICKS / UPLOAD_CALLS, created with `conversions_create_conversion_action`).
+- **Account links**: `scripts/account_links.py list` to see status; `invite-merchant --merchant-id` sends a Merchant Center invitation (the Merchant Center admin must approve it); GA4 links can only be created on the GA4 side - run `account_links.py ga4-howto` and give the human the steps. Re-run `list` afterwards to confirm the link is active.
 
 ## 4. Write `account-brief.md`
 Fill the template with confirmed answers and the IDs of everything created. Show it, get approval, save in the working directory. This file is the input to `/scg-ads:new-campaign` and `/scg-ads:update`.
