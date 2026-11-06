@@ -3,28 +3,32 @@
 Claude Code plugin marketplace. Currently one plugin: **`scg-ads`** - a human + AI Google Ads pipeline.
 
 ## Install
-Requires [`uv`](https://docs.astral.sh/uv/) and Claude Code.
+Requires [`uv`](https://docs.astral.sh/uv/) and Claude Code. Do it in order: first get the MCP server running locally, then add the plugin.
 
+### 1. Run the Google Ads MCP server locally
 ```bash
-# 1. the Google Ads MCP server (fork)
 git clone https://github.com/sergiuscraft/google-ads-mcp.git
-
-# 2. this marketplace
 git clone https://github.com/sergiuscraft/scg-ads-plugins-marketplace.git
-./scg-ads-plugins-marketplace/tools/install-hooks.sh   # optional, for contributors: blocks commits with secrets/personal data
 
-# 3. point the plugin at the fork and set credentials (add to your shell profile)
-export GOOGLE_ADS_MCP_FORK_DIR="$PWD/google-ads-mcp"
-export GOOGLE_APPLICATION_CREDENTIALS=/path/to/adc.json     # see plugins/scg-ads/docs/PREREQS.md
+# credentials: environment only, never in a repo (how to get them: scg-ads-plugins-marketplace/plugins/scg-ads/docs/PREREQS.md)
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/adc.json
 export GOOGLE_ADS_LOGIN_CUSTOMER_ID=<manager account id>
 export GOOGLE_ADS_DEVELOPER_TOKEN=<developer token>
+export GOOGLE_ADS_MCP_FORK_DIR="$PWD/google-ads-mcp"
 
-# 4. add the marketplace and install the plugin
+# check that the server starts and can read your account (read-only)
+./scg-ads-plugins-marketplace/tools/smoke_mcp.py
+```
+Expected: `OK: server started, 47 tools` and your accessible customer ids. If it fails, fix this before step 2 (usual causes: ADC file/scope, wrong login customer id, missing developer token).
+
+### 2. Add the MCP tools and skills to Claude Code
+```bash
 claude plugin marketplace add ./scg-ads-plugins-marketplace
 claude plugin install scg-ads@scg-ads-plugins
 ```
+The plugin starts the server from step 1 itself (`uv run --directory "$GOOGLE_ADS_MCP_FORK_DIR" -m ads_mcp.server`) using the same env vars, so keep them in your shell profile. Restart Claude Code, then run `/scg-ads:setup`. If you also registered a `google-ads` server by hand, remove one of them to avoid duplicate tools.
 
-Restart Claude Code, then run `/scg-ads:setup`. Credentials live only in your environment, never in the repo.
+Contributors: run `./scg-ads-plugins-marketplace/tools/install-hooks.sh` to block commits containing secrets or personal data.
 
 ## Use
 | Command | Stage |
