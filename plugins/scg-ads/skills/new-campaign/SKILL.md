@@ -14,6 +14,9 @@ Load `propose-confirm` first. `$ARGUMENTS` is free context; **no required syntax
 3. Run `uv run ${CLAUDE_PLUGIN_ROOT}/scripts/configure.py use <label-or-id> [--login <manager id>]` then `... configure.py workspace --customer <label-or-id>`; the last prints the **workspace folder** (`<root>/<label or id>/` with `account-brief.md`, `changelog.md`, `out/`, `campaigns/`, `creatives/`). For an account that is not saved, ask the human for its manager (login) id or "none/direct" and pass it with `--login`.
 4. From now on: every file this skill writes (briefs, CSVs, reports, changelog) goes into that folder, by absolute path; say the folder path to the human once. Pass the table's **login id** as `login_customer_id` on every MCP tool call, and `--customer <label-or-id>` to scripts (they resolve labels and the login id themselves).
 
+## 0b. Campaign type
+AskUserQuestion: **Search** (default; continue below), **Performance Max**, **Display**, **Shopping**, **Demand Gen**, **Video**. For anything but Search use the spec flow in the last section of this skill (keywords/RSA steps do not apply; Shopping needs a linked Merchant Center feed, Video needs YouTube videos).
+
 ## 1. Context
 - Read `account-brief.md` from the workspace; if it is still the empty template, suggest `/scg-ads:setup` (or continue with a minimal interview).
 - Create the campaign folder `<workspace>/campaigns/<campaign-name>/` and `campaign-brief.md` in it from `${CLAUDE_PLUGIN_ROOT}/templates/campaign-brief.md`; keep this campaign's `keywords.csv` and `ads.csv` there instead of the account-level `out/`.
@@ -46,3 +49,10 @@ If images/video are wanted, run `creatives`.
 
 ## 8. Verify and hand over
 Read everything back with `search_search` (campaign, budget, criteria, ad groups, ads, assets) and show a final checklist table: status, budget, bidding, geo, schedule, audiences, number of ad groups/keywords/negatives/ads, policy flags. Ask whether to **enable** (separate proposal via `campaigns_set_campaign_status`, then enable ad groups/ads). Append everything to the workspace `changelog.md`. Remind the human to review the Policy/approval status in the UI after 24h.
+
+## Other campaign types (PMax, Display, Shopping, Demand Gen, Video)
+1. Copy `${CLAUDE_PLUGIN_ROOT}/templates/specs/<type>.toml` into the campaign folder and fill it **with the human**: goal and bidding (`budget` skill for budget/targets), geo ids (`targeting_suggest_geo_targets`), languages, EU political flag (ask, never assume), landing page, and the creative: headlines / long headlines / descriptions drafted from the landing page and brand rules (`budget` skill step 6 policy check), business name (<= 25 chars), images (use `creatives`: landscape 1.91:1, square 1:1, logo 1:1, optional portrait 4:5), YouTube videos as `youtube:<ID>`. For Shopping: Merchant Center id and feed label; check the link with `account_links.py list` first.
+2. Offline checks, no credentials: `uv run ${CLAUDE_PLUGIN_ROOT}/scripts/campaign_create_other.py <type> --spec <file> --lint-only`. Fix every problem it lists (text limits, image ratios and sizes, missing fields).
+3. Dry run: same command without `--lint-only` and with `--customer <label-or-id>`; show the human the change items (budget, campaign, targeting, assets, ad group/asset group, ad) and the API result. If the API rejects it, show the error verbatim, fix the spec, repeat. This script has not been run live yet: say so on the first use.
+4. Apply with `--apply --checksum <hash>` only after an explicit yes. Everything is created PAUSED in one atomic request.
+5. Afterwards: audiences / topics / placements / PMax audience signals (`audiences_*` tools or the UI), conversion goal check, sitelinks etc. via `assets_create_asset` + `asset_links_link_asset`, schedule via `scheduling_*` / `ad_schedule.py`, dates/tracking via `campaign_settings.py`. Read back with `search_search`, then ask about enabling (separate proposal).

@@ -43,12 +43,13 @@ No parameter syntax: commands discover accounts, campaigns and options from the 
 - **Safety**: dry run -> checksum -> explicit yes -> commit; new objects PAUSED. Same contract for MCP tools and scripts.
 
 ## Layout
-`plugins/scg-ads/` - `docs/CREDENTIALS.md` (how to get keys), `config.example.toml`, `skills/` (setup, new-campaign, update, keywords, budget, creatives, propose-confirm), `commands/`, `scripts/` (Python via `uv run`: configure, run_mcp, keyword_ideas, import_csv, create_ads, ad_schedule, campaign_settings, conversion_upload, user_lists, account_links), `templates/`, `docs/`, `tests/`.
+`plugins/scg-ads/` - `docs/CREDENTIALS.md` (how to get keys), `config.example.toml`, `skills/` (setup, new-campaign, update, keywords, budget, creatives, propose-confirm), `commands/`, `scripts/` (Python via `uv run`: configure, run_mcp, keyword_ideas, import_csv, create_ads, ad_schedule, campaign_settings, conversion_upload, user_lists, account_links, campaign_create_other), `templates/`, `docs/`, `tests/`.
 
 ## Tests
 ```bash
 cd plugins/scg-ads && uv run --with pytest --with google-ads --with google-auth python -m pytest tests -q
 ```
 
-## Roadmap
-P3: `campaign_create_other.py` (Display, PMax, Demand Gen, Shopping, Video). See `docs/TOOL-MAP.md`.
+## Status
+All planned tools exist. Live-API caveats (never run against a real account yet): `campaign_create_other.py`, the P2 upload scripts and several fork tools; each runs a dry run first. See `plugins/scg-ads/docs/TOOL-MAP.md` and `PREREQS.md`.
+Not covered yet: audience signals for PMax, Shopping listing-group trees, App/Local/Travel campaign types.

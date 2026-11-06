@@ -359,3 +359,117 @@ def test_config_without_any_accounts_is_valid(cfg_env, capsys):
     assert cfgmod.load()["credentials"]["developer_token"] == "x"
     assert configure.main(["list"]) == 1
     assert "10-digit" in capsys.readouterr().err
+
+
+# ---- P3: campaign_create_other ----
+import re  # noqa: E402
+import struct as _struct  # noqa: E402
+import zlib  # noqa: E402
+import campaign_create_other as cco  # noqa: E402
+from _lib import imagesize  # noqa: E402
+
+TEMPLATES = Path(__file__).resolve().parents[1] / "templates" / "specs"
+
+
+def _png(w, h):
+    raw = b"".join(b"\x00" + b"\x00\x00\x00" * w for _ in range(h))
+    ch = lambda t, d: _struct.pack(">I", len(d)) + t + d + _struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)  # noqa: E731
+    return (b"\x89PNG\r\n\x1a\n" + ch(b"IHDR", _struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+            + ch(b"IDAT", zlib.compress(raw)) + ch(b"IEND", b""))
+
+
+@pytest.fixture
+def img_dir(tmp_path):
+    (tmp_path / "images").mkdir()
+    for n, (w, h) in {"landscape-1200x628": (1200, 628), "square-1200x1200": (1200, 1200),
+                      "logo-1200x1200": (1200, 1200), "portrait-960x1200": (960, 1200)}.items():
+        (tmp_path / "images" / f"{n}.png").write_bytes(_png(w, h))
+    return tmp_path
+
+
+def test_imagesize_png_and_ratio():
+    assert imagesize.dimensions(_png(1200, 628)) == (1200, 628)
+    assert imagesize.ratio_ok(1200, 628, 1.91) and not imagesize.ratio_ok(1000, 1000, 1.91)
+    assert imagesize.dimensions(b"not an image") is None
+
+
+@pytest.mark.parametrize("kind", cco.TYPES)
+def test_templates_lint_clean_with_images(kind, img_dir):
+    spec = cco.load_spec(TEMPLATES / f"{kind}.toml")
+    assert cco.lint(kind, spec, img_dir) == []
+
+
+def test_lint_catches_problems(img_dir):
+    spec = cco.load_spec(TEMPLATES / "pmax.toml")
+    spec["campaign"]["bidding"] = "MANUAL_CPC"
+    del spec["campaign"]["eu_political_ads"]
+    spec["creative"]["headlines"] = ["x" * 31, "b"]
+    spec["creative"]["business_name"] = "n" * 26
+    (img_dir / "images" / "landscape-1200x628.png").write_bytes(_png(500, 500))   # wrong ratio
+    spec["creative"]["descriptions"] = ["d" * 80, "e" * 80]                       # none <= 60
+    errs = " | ".join(cco.lint("pmax", spec, img_dir))
+    for needle in ("campaign.bidding", "eu_political_ads", "headlines: need 3", "too long", "business_name max 25",
+                   "ratio 1.91", "<= 60"):
+        assert needle in errs, needle
+    spec2 = cco.load_spec(TEMPLATES / "shopping.toml")
+    spec2["shopping"]["merchant_id"] = "abc"
+    assert any("merchant_id" in e for e in cco.lint("shopping", spec2))
+
+
+def _client():
+    from google.ads.googleads.client import GoogleAdsClient
+    from google.oauth2.credentials import Credentials
+    return GoogleAdsClient(credentials=Credentials(token="x"), developer_token="x", use_proto_plus=True)
+
+
+@pytest.mark.parametrize("kind", cco.TYPES)
+def test_build_orders_temp_resources_before_use_and_stays_paused(kind, img_dir):
+    c = _client()
+    spec = cco.load_spec(TEMPLATES / f"{kind}.toml")
+    ops, items = cco.build(c, kind, spec, "1234567890", img_dir)
+    pat = re.compile(r"customers/\d+/\w+/-\d+")
+    created = set()
+    for op in ops:
+        text = str(op._pb)
+        own = op._pb.WhichOneof("operation")
+        body = getattr(op._pb, own)
+        rn = body.create.resource_name if body.HasField("create") else ""
+        for ref in set(pat.findall(text)) - {rn}:
+            assert ref in created, f"{kind}: {own} references {ref} before it is created"
+        if rn:
+            created.add(rn)
+    camp = [o for o in ops if o._pb.WhichOneof("operation") == "campaign_operation"][0].campaign_operation.create
+    assert camp.status.name == "PAUSED" and camp.name == "Example campaign"
+    assert all(i["operation"] in ("CREATE", "LINK", "UPLOAD") for i in items)
+
+
+def test_pmax_assets_and_bidding(img_dir):
+    c = _client()
+    spec = cco.load_spec(TEMPLATES / "pmax.toml")
+    spec["campaign"]["bidding"] = "MAXIMIZE_CONVERSION_VALUE"
+    spec["campaign"]["target_roas"] = 3.5
+    ops, _ = cco.build(c, "pmax", spec, "1234567890", img_dir)
+    camp = [o for o in ops if o._pb.WhichOneof("operation") == "campaign_operation"][0].campaign_operation.create
+    assert camp._pb.HasField("maximize_conversion_value") and camp.maximize_conversion_value.target_roas == 3.5
+    assert camp.advertising_channel_type.name == "PERFORMANCE_MAX"
+    links = [o.asset_group_asset_operation.create.field_type.name for o in ops
+             if o._pb.WhichOneof("operation") == "asset_group_asset_operation"]
+    assert links.count("HEADLINE") == 3 and "BUSINESS_NAME" in links and "LOGO" in links and "MARKETING_IMAGE" in links
+    budget = [o for o in ops if o._pb.WhichOneof("operation") == "campaign_budget_operation"][0].campaign_budget_operation.create
+    assert budget.amount_micros == 20_000_000 and not budget.explicitly_shared
+
+
+def test_shopping_settings(img_dir):
+    spec = cco.load_spec(TEMPLATES / "shopping.toml")
+    ops, _ = cco.build(_client(), "shopping", spec, "1234567890", img_dir)
+    camp = [o for o in ops if o._pb.WhichOneof("operation") == "campaign_operation"][0].campaign_operation.create
+    assert camp.shopping_setting.merchant_id == 1234567 and camp.shopping_setting.feed_label == "UA"
+    assert camp.manual_cpc.enhanced_cpc_enabled is False
+    crit = [o for o in ops if o._pb.WhichOneof("operation") == "ad_group_criterion_operation"][0].ad_group_criterion_operation.create
+    assert crit.listing_group.type_.name == "UNIT" and crit.cpc_bid_micros == 300_000
+
+
+def test_lint_only_cli(img_dir, capsys):
+    (img_dir / "pmax.toml").write_text((TEMPLATES / "pmax.toml").read_text())
+    assert cco.main(["pmax", "--spec", str(img_dir / "pmax.toml"), "--lint-only"]) == 0
+    assert "OK" in capsys.readouterr().out

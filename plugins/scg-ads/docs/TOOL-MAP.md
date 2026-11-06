@@ -1,6 +1,6 @@
 # Stage -> tool map
 
-MCP = google-ads server (fork). SCRIPT = `${CLAUDE_PLUGIN_ROOT}/scripts/`. Status: ready / planned (P2/P3).
+MCP = google-ads server (fork). SCRIPT = `${CLAUDE_PLUGIN_ROOT}/scripts/`. Status: ready / planned.
 
 | Need | How | Status |
 |---|---|---|
@@ -24,5 +24,5 @@ MCP = google-ads server (fork). SCRIPT = `${CLAUDE_PLUGIN_ROOT}/scripts/`. Statu
 | Conversion uploads (offline click / call, enhanced via hashed email/phone) | SCRIPT `conversion_upload.py` | ready |
 | Account links: list, Merchant Center invite (human approves in Merchant Center); GA4 link is created on the GA4 side (`ga4-howto`) | SCRIPT `account_links.py` | ready |
 | User lists: list, create, Customer Match upload (local hashing, explicit consent flag) | SCRIPT `user_lists.py` | ready |
-| Display / PMax / Demand Gen / Shopping / Video | SCRIPT `campaign_create_other.py` | planned P3 |
+| Display / PMax / Demand Gen / Shopping / Video campaigns from a TOML spec (budget, campaign, assets/asset group or ad group + ad, location/language; PAUSED) | SCRIPT `campaign_create_other.py` (templates in `templates/specs/`) | ready (API dry run not yet run live: first use may need spec fixes) |
 | Images / video creation | other MCPs (Higgsfield, Figma...) via `creatives` skill | ready (depends on connected MCPs) |

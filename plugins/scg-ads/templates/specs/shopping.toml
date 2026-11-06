@@ -1,0 +1,21 @@
+# Standard Shopping. Needs a linked Merchant Center with an approved product feed (account_links.py invite-merchant).
+[campaign]
+name = "Example campaign"
+daily_budget = 20.0                  # account currency
+bidding = "MANUAL_CPC"
+# target_cpa = 12.0                  # only with TARGET_CPA / MAXIMIZE_CONVERSIONS (optional target)
+# target_roas = 4.0                  # only with TARGET_ROAS / MAXIMIZE_CONVERSION_VALUE (optional target)
+# max_cpc = 1.5                      # optional ceiling for MAXIMIZE_CLICKS
+locations = [2804]                   # geo target ids: targeting_suggest_geo_targets (2804 = Ukraine)
+exclude_locations = []
+languages = [1031]                   # 1000 English, 1031 Ukrainian, 1049 Russian ...
+eu_political_ads = false             # must be set explicitly
+# final_url_suffix = "utm_source=google"
+[shopping]
+merchant_id = "1234567"
+feed_label = "UA"            # feed label (usually the country code)
+priority = 0                 # 0 low, 1 medium, 2 high
+
+[ad_group]
+name = "All products"
+cpc_bid = 0.3

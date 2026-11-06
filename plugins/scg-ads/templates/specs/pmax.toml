@@ -1,0 +1,29 @@
+# Performance Max. Everything is created PAUSED. Audience signals are added afterwards.
+[campaign]
+name = "Example campaign"
+daily_budget = 20.0                  # account currency
+bidding = "MAXIMIZE_CONVERSIONS"
+# target_cpa = 12.0                  # only with TARGET_CPA / MAXIMIZE_CONVERSIONS (optional target)
+# target_roas = 4.0                  # only with TARGET_ROAS / MAXIMIZE_CONVERSION_VALUE (optional target)
+# max_cpc = 1.5                      # optional ceiling for MAXIMIZE_CLICKS
+locations = [2804]                   # geo target ids: targeting_suggest_geo_targets (2804 = Ukraine)
+exclude_locations = []
+languages = [1031]                   # 1000 English, 1031 Ukrainian, 1049 Russian ...
+eu_political_ads = false             # must be set explicitly
+# final_url_suffix = "utm_source=google"
+[asset_group]
+name = "Asset group 1"
+
+[creative]
+final_url = "https://example.com/landing"
+business_name = "Example Co"         # max 25 chars
+headlines = ["Headline one", "Headline two", "Headline three"]
+long_headlines = ["A longer headline up to ninety characters that sells the offer"]
+descriptions = ["Short description up to sixty chars", "A second description, up to ninety characters, with a clear call to action"]
+marketing_images = ["images/landscape-1200x628.png"]          # 1.91:1, min 600x314; paths relative to this file
+square_marketing_images = ["images/square-1200x1200.png"]     # 1:1, min 300x300
+logo_images = ["images/logo-1200x1200.png"]                   # 1:1, min 128x128
+# portrait_marketing_images = ["images/portrait-960x1200.png"] # 4:5
+# landscape_logo_images = ["images/logo-1200x300.png"]         # 4:1 (PMax)
+# videos = ["youtube:VIDEO_ID", "asset:1234567890"]
+# call_to_action = "Learn more"
