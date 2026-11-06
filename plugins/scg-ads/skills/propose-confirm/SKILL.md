@@ -26,5 +26,5 @@ Every write in scg-ads is two-phase. No exceptions, including "small" changes.
 - Batch related operations into one proposal so the human reviews one coherent change, not 40 fragments. Keep each batch <= 100 operations (account may be on Explorer access with daily operation limits - check `docs/PREREQS.md`).
 - If a dry run fails, show the API error verbatim, fix the input, re-propose. Never "try the commit anyway".
 - Tools never run live before: `shared_sets_detach_negative_keyword_list`, `budgets_set_campaign_budget`, `ads_replace_responsive_search_ad`, ad-group-level `keywords_add_negative_keywords`. Tell the human it is a first live use and re-check by read-back.
-- Never print or paste credentials, refresh tokens or the developer token.
-- Keep an append-only `changelog.md` in the working directory: date, customer, what changed, who approved (the human).
+- Never print, paste or ask for credentials, refresh tokens or the developer token; setup is done by the human in a terminal with `configure.py` (the agent only runs `configure.py list|use|workspace`, which hold no secrets). Do not read `config.toml` or `adc.json`.
+- Keep an append-only `changelog.md` in the account's workspace folder (`configure.py workspace`): date, customer, what changed, who approved (the human).

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["google-ads>=33", "google-auth"]
 # ///
 """Keyword Planner ideas -> CSV (read-only).
@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib.client import clean_id, format_error, get_client  # noqa: E402
+from _lib.safety import _customer_arg  # noqa: E402
 from _lib.csvio import write_rows  # noqa: E402
 
 FIELDS = [
@@ -74,7 +75,7 @@ def to_row(idea) -> dict:
 
 def main(argv=None, client=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--customer", required=True)
+    p.add_argument("--customer", type=_customer_arg, required=True, help="Account label from config.toml or customer id")
     p.add_argument("--login-customer")
     p.add_argument("--seeds", type=lambda s: [x.strip() for x in s.split(",") if x.strip()])
     p.add_argument("--seeds-file")
@@ -83,9 +84,12 @@ def main(argv=None, client=None) -> int:
     p.add_argument("--language", default="1000", help="Language constant id (1000=English, 1031=Ukrainian)")
     p.add_argument("--partners", action="store_true", help="Include search partners")
     p.add_argument("--min-volume", type=int, default=0)
-    p.add_argument("--out", default="out/keyword_ideas.csv")
+    p.add_argument("--out", help="CSV path (default: <account workspace>/out/keyword_ideas.csv)")
     args = p.parse_args(argv)
 
+    if not args.out:
+        from _lib import workspace
+        args.out = str(workspace.out_dir(args.customer) / "keyword_ideas.csv")
     client = client or get_client(args.login_customer)
     try:
         service = client.get_service("KeywordPlanIdeaService")

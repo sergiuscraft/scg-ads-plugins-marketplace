@@ -1,22 +1,11 @@
 # Prerequisites
 
-## 1. Google Ads MCP fork
-Clone the fork and export its path:
-```bash
-git clone https://github.com/sergiuscraft/google-ads-mcp.git
-export GOOGLE_ADS_MCP_FORK_DIR="$PWD/google-ads-mcp"
-```
-The plugin's `.mcp.json` starts it with `uv run --directory "$GOOGLE_ADS_MCP_FORK_DIR" -m ads_mcp.server`.
+## 1. Google Ads MCP fork + credentials
+Clone `https://github.com/sergiuscraft/google-ads-mcp.git`, then run `scripts/configure.py init`. The plugin's `.mcp.json` starts the server through `scripts/run_mcp.py`, which reads `~/.config/scg-ads/config.toml` and exports the credentials to the server process only. Full guide, including how to obtain every key: **`CREDENTIALS.md`**.
 If you already registered a `google-ads` server in your own MCP config, disable one of them to avoid duplicate tool names.
 
-## 2. Credentials (env only, never in this repo)
-| Var | Purpose |
-|---|---|
-| `GOOGLE_APPLICATION_CREDENTIALS` | ADC json with the `adwords` scope (keep it outside any repo, mode 600) |
-| `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | manager account id |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | needed for scripts like Keyword Planner; the MCP also sends it if set |
-
-Scripts use the same variables (`scripts/_lib/client.py`) and run with `uv run <script>`; dependencies are declared inline (PEP 723). `uv` required.
+## 2. Environment overrides
+Real env vars win over the file: `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_MCP_FORK_DIR`, `SCG_ADS_CONFIG` (config path). Scripts run with `uv run <script>`; dependencies are declared inline (PEP 723).
 
 ## 3. Developer-token access level (important)
 - Explorer access: low daily operation limit, **Keyword Planner returns `DEVELOPER_TOKEN_NOT_APPROVED`**. `keyword_ideas.py` exits with code 4 and the skills fall back to CSV / search terms.
@@ -29,4 +18,4 @@ Scripts use the same variables (`scripts/_lib/client.py`) and run with `uv run <
 Everything dry-runs first; new objects are PAUSED; commit needs the checksum of the exact approved inputs. Scripts follow the same contract: no `--apply` without `--checksum`.
 
 ## 6. Do not commit
-`client_secret*.json`, `mcp-google-ads.yaml`, `adc.json`, any refresh token. The `.gitignore` covers common names; check `git status` before committing. Run `tools/install-hooks.sh` once after cloning: a pre-commit scan blocks secret files, token patterns, personal emails, absolute home paths and anything listed in your untracked `.personal-denylist`.
+`client_secret*.json`, `mcp-google-ads.yaml`, `adc.json`, any refresh token. The `.gitignore` covers common names; check `git status` before committing. Run `tools/install-hooks.sh` once after cloning (contributors): a pre-commit scan blocks secret files, token patterns, personal emails, absolute home paths and anything listed in your untracked `.personal-denylist`.

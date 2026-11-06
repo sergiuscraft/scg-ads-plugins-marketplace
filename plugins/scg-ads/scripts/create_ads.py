@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["google-ads>=33", "google-auth"]
 # ///
 """Create Responsive Search Ads from CSV (replaces the MCP ad tools by design).
@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib.csvio import read_rows  # noqa: E402
+from _lib.safety import _customer_arg  # noqa: E402
 
 H_MAX, D_MAX, P_MAX = 30, 90, 15
 
@@ -97,7 +98,7 @@ def main(argv=None, client=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--csv", required=True)
     p.add_argument("--lint-only", action="store_true")
-    p.add_argument("--customer")
+    p.add_argument("--customer", type=_customer_arg, help="Account label from config.toml or customer id")
     p.add_argument("--login-customer")
     p.add_argument("--campaign", help="Campaign id (ad groups are resolved by name inside it)")
     p.add_argument("--apply", action="store_true")

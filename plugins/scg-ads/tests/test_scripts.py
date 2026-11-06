@@ -197,3 +197,165 @@ def test_upload_refuses_without_consent(tmp_path, capsys):
 def test_ga4_howto(capsys):
     assert account_links.main(["ga4-howto"]) == 0
     assert "Product links" in capsys.readouterr().out
+
+
+# ---- config / configure ----
+import os  # noqa: E402
+import stat  # noqa: E402
+import configure  # noqa: E402
+from _lib import config as cfgmod  # noqa: E402
+
+
+@pytest.fixture
+def cfg_env(tmp_path, monkeypatch):
+    p = tmp_path / "cfg" / "config.toml"
+    monkeypatch.setenv("SCG_ADS_CONFIG", str(p))
+    for v in cfgmod.ENV_MAP:
+        monkeypatch.delenv(v, raising=False)
+    return p
+
+
+def _sample():
+    return {
+        "mcp": {"fork_dir": "/opt/fork"},
+        "credentials": {"adc_file": "/x/adc.json", "developer_token": 'tok"en', "login_customer_id": "7000000001"},
+        "defaults": {"account": "clinic"},
+        "accounts": [
+            {"label": "clinic", "customer_id": "1111111111", "login_customer_id": "", "name": "Clinic \\ A"},
+            {"label": "shop", "customer_id": "2222222222", "login_customer_id": "7000000002", "name": "Shop"},
+        ],
+    }
+
+
+def test_config_roundtrip_private_mode_and_escaping(cfg_env):
+    cfgmod.save(_sample())
+    assert stat.S_IMODE(os.stat(cfg_env).st_mode) == 0o600
+    assert stat.S_IMODE(os.stat(cfg_env.parent).st_mode) == 0o700
+    back = cfgmod.load()
+    assert back["credentials"]["developer_token"] == 'tok"en' and back["accounts"][0]["name"] == "Clinic \\ A"
+    assert cfgmod.mode_ok(cfg_env)
+
+
+def test_resolve_labels_ids_and_login(cfg_env):
+    cfgmod.save(_sample())
+    cfg = cfgmod.load()
+    assert cfgmod.resolve_customer("SHOP", cfg) == "2222222222"
+    assert cfgmod.resolve_customer("111-111-1111", cfg) == "1111111111"
+    assert cfgmod.resolve_customer(None, cfg) == "1111111111"            # default account
+    assert cfgmod.resolve_customer("999-999-9999", cfg) == "9999999999"   # unknown id passes through
+    assert cfgmod.login_for("1111111111", cfg) == "7000000001"            # global
+    assert cfgmod.login_for("2222222222", cfg) == "7000000002"            # per-account override
+
+
+def test_apply_env_fills_missing_but_real_env_wins(cfg_env, monkeypatch):
+    cfgmod.save(_sample())
+    monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "5555555555")
+    cfgmod.apply_env()
+    assert os.environ["GOOGLE_ADS_LOGIN_CUSTOMER_ID"] == "5555555555"
+    assert os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"] == 'tok"en'
+    assert os.environ["GOOGLE_APPLICATION_CREDENTIALS"] == "/x/adc.json"
+
+
+def test_refuses_to_write_secrets_inside_a_git_repo(tmp_path):
+    (tmp_path / ".git").mkdir()
+    with pytest.raises(cfgmod.ConfigError):
+        cfgmod.write_private(tmp_path / "sub" / "config.toml", "x")
+
+
+def test_show_masks_token(cfg_env, capsys):
+    cfgmod.save(_sample())
+    assert configure.main(["show"]) == 0
+    out = capsys.readouterr().out
+    assert "tok" + chr(34) not in out and "******" in out and "developer_token" in out
+
+
+def test_discover_with_fake_client():
+    class R:  # minimal fakes of the API objects
+        def __init__(self, **k): self.__dict__.update(k)
+    def row(i, name, mgr):
+        return R(customer_client=R(id=i, descriptive_name=name, manager=mgr, currency_code="EUR", time_zone="UTC"))
+    class Svc:
+        def __init__(self, login): self.login = login
+        def list_accessible_customers(self): return R(resource_names=["customers/700", "customers/111"])
+        def search_stream(self, customer_id, query):
+            if customer_id == "700":
+                return [R(results=[row(700, "MCC", True), row(111, "Clinic", False)])]
+            return [R(results=[row(111, "Clinic", False)])]
+    class Client:
+        def __init__(self, login): self.login = login
+        def get_service(self, name): return Svc(self.login)
+    accs, errs = configure.discover(lambda login: Client(login))
+    by = {a["customer_id"]: a for a in accs}
+    assert errs == [] and set(by) == {"700", "111"}
+    assert by["111"]["login_customer_id"] == "700"       # prefers the manager over direct access
+    assert by["700"]["login_customer_id"] == "700" and by["700"]["manager"] is True   # direct = own id
+
+
+def test_slug_unique():
+    assert configure.slug("Clinic UA!", set()) == "clinic-ua"
+    assert configure.slug("Clinic UA!", {"clinic-ua"}) == "clinic-ua-2"
+
+
+def test_list_has_no_secrets_and_login_per_account(cfg_env, capsys):
+    cfgmod.save(_sample())
+    assert configure.main(["list"]) == 0
+    out = capsys.readouterr().out
+    assert "tok" + chr(34) not in out and "adc" not in out
+    rows = {l.split("\t")[0]: l.split("\t") for l in out.strip().splitlines()[1:]}
+    assert rows["clinic"][2] == "7000000001" and rows["shop"][2] == "7000000002" and rows["clinic"][6] == "yes"
+
+
+# ---- workspace ----
+from _lib import workspace  # noqa: E402
+
+
+def test_workspace_for_configured_and_unconfigured_accounts(cfg_env, tmp_path):
+    c = _sample()
+    c["workspace"] = {"root": str(tmp_path / "ws")}
+    cfgmod.save(c)
+    cfg = cfgmod.load()
+    a = workspace.ensure("clinic", cfg)
+    assert a == tmp_path / "ws" / "clinic"                       # configured -> label folder
+    assert (a / "out").is_dir() and (a / "campaigns").is_dir() and (a / "creatives").is_dir()
+    assert (a / "changelog.md").exists() and "1111111111" in (a / "account-brief.md").read_text()
+    b = workspace.ensure("999-888-7777", cfg, name="Ad hoc", login="700-000-0001")  # NOT in config
+    assert b == tmp_path / "ws" / "9998887777"
+    assert 'login_customer_id = "7000000001"' in (b / "account.toml").read_text()
+    assert cfgmod.login_for("9998887777", cfg) == "7000000001"    # read back from the workspace
+    (a / "changelog.md").write_text("keep me")
+    workspace.ensure("clinic", cfg)                                  # idempotent, never overwrites
+    assert (a / "changelog.md").read_text() == "keep me"
+    with pytest.raises(cfgmod.ConfigError):
+        workspace.folder_name("not an id", cfg)
+
+
+def test_use_sets_default_for_unconfigured_account(cfg_env, tmp_path, capsys, monkeypatch):
+    c = _sample()
+    c["workspace"] = {"root": str(tmp_path / "ws")}
+    cfgmod.save(c)
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    assert configure.main(["use", "555-444-3333", "--login", "7000000001"]) == 0
+    assert cfgmod.load()["defaults"]["account"] == "5554443333"
+    assert (tmp_path / "ws" / "5554443333" / "account.toml").exists()
+    assert configure.main(["use", "shop"]) == 0
+    assert cfgmod.load()["defaults"]["account"] == "shop"
+    assert "not in config" not in capsys.readouterr().out.split("Working account: shop")[1]
+    assert cfgmod.find_account(cfgmod.load(), None)["customer_id"] == "2222222222"
+
+
+def test_list_includes_workspace_only_accounts(cfg_env, tmp_path, capsys):
+    c = _sample()
+    c["workspace"] = {"root": str(tmp_path / "ws")}
+    cfgmod.save(c)
+    workspace.ensure("999-888-7777", cfgmod.load(), name="Ad hoc", login="7000000009")
+    assert configure.main(["list"]) == 0
+    rows = {l.split("\t")[1]: l.split("\t") for l in capsys.readouterr().out.strip().splitlines()[1:]}
+    assert set(rows) == {"1111111111", "2222222222", "9998887777"}
+    assert rows["9998887777"][2] == "7000000009" and rows["9998887777"][5] == "Ad hoc"
+
+
+def test_config_without_any_accounts_is_valid(cfg_env, capsys):
+    cfgmod.save({"credentials": {"developer_token": "x"}})
+    assert cfgmod.load()["credentials"]["developer_token"] == "x"
+    assert configure.main(["list"]) == 1
+    assert "10-digit" in capsys.readouterr().err

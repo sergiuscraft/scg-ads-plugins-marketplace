@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run --script
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["google-ads>=33", "google-auth"]
 # ///
 """Customer Match: create a CRM-based user list and/or upload hashed members. Dry run by default.

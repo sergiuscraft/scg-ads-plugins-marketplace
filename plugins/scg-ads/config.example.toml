@@ -1,0 +1,24 @@
+# scg-ads config. Copy to ~/.config/scg-ads/config.toml (chmod 600) OR let `scripts/configure.py init` write it.
+# NEVER commit or paste this file. Real environment variables override these values.
+
+[mcp]
+fork_dir = "~/google-ads-mcp"            # your clone of https://github.com/sergiuscraft/google-ads-mcp
+
+[credentials]
+adc_file = "~/.config/scg-ads/adc.json"  # written by `configure.py login` (holds the OAuth refresh token)
+developer_token = ""                     # Google Ads manager > Tools > API Center
+login_customer_id = ""                   # your manager (MCC) account id, digits only
+
+[defaults]
+account = ""                             # filled by `configure.py use`: a label or a 10-digit id
+
+[workspace]
+root = "~/ads-workspaces"                # one folder per account (created by `configure.py use <10-digit id>`)
+
+# Accounts are OPTIONAL here: `configure.py use 123-456-7890` works without any entry.
+# Add one only if you want a short label (use it as --customer main) or a per-account manager:
+# [[accounts]]
+# label = "main"
+# customer_id = "1234567890"
+# login_customer_id = ""                 # manager used for THIS account (else [credentials])
+# name = ""

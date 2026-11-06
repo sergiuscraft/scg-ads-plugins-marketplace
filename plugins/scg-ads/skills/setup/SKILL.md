@@ -10,9 +10,11 @@ Goal: a reviewed `account-brief.md` (template: `${CLAUDE_PLUGIN_ROOT}/templates/
 
 `$ARGUMENTS` is free context only (a brief, a path, a sentence). Read it, but **never require a syntax**; discover everything else and let the human pick.
 
-## 0. Pick the account (discover, then ask)
-1. `customers_list_accessible_customers`, then `search_search` on `customer` (`customer.descriptive_name`, `customer.id`, `customer.currency_code`, `customer.time_zone`, `customer.manager`) for each id.
-2. AskUserQuestion pick-list of accounts. Skip manager accounts unless asked. Confirm currency and time zone back to the human - they drive budgets and schedules.
+## 0. Pick the account and its workspace (no secrets involved)
+1. Run `uv run ${CLAUDE_PLUGIN_ROOT}/scripts/configure.py list` - a table of saved accounts: label, customer id, **login id**, currency, time zone, name, default. If it reports no config, tell the human to run `configure.py init` in their own terminal (never ask them to paste keys or tokens here).
+2. AskUserQuestion: the saved accounts (default first) plus "Other - any customer id (does not need to be in the config)". Several accounts are normal: always confirm which one this session works on.
+3. Run `uv run ${CLAUDE_PLUGIN_ROOT}/scripts/configure.py use <label-or-id> [--login <manager id>]` then `... configure.py workspace --customer <label-or-id>`; the last prints the **workspace folder** (`<root>/<label or id>/` with `account-brief.md`, `changelog.md`, `out/`, `campaigns/`, `creatives/`). For an account that is not saved, ask the human for its manager (login) id or "none/direct" and pass it with `--login`.
+4. From now on: every file this skill writes (briefs, CSVs, reports, changelog) goes into that folder, by absolute path; say the folder path to the human once. Pass the table's **login id** as `login_customer_id` on every MCP tool call, and `--customer <label-or-id>` to scripts (they resolve labels and the login id themselves).
 
 ## 1. Audit what already exists (read-only, `search_search`)
 Campaigns (status, budget), conversion actions (status, primary, category), shared negative lists, assets by type, user lists (type, size, status), labels, linked accounts visible via resources, last 30d spend. Summarise in 10 lines; flag problems (no primary conversion, tag inactive, duplicate actions, budgets limited, empty lists).
@@ -41,7 +43,7 @@ Not covered by MCP - use the scripts (same dry run -> approve -> `--apply --chec
 - **Account links**: `scripts/account_links.py list` to see status; `invite-merchant --merchant-id` sends a Merchant Center invitation (the Merchant Center admin must approve it); GA4 links can only be created on the GA4 side - run `account_links.py ga4-howto` and give the human the steps. Re-run `list` afterwards to confirm the link is active.
 
 ## 4. Write `account-brief.md`
-Fill the template with confirmed answers and the IDs of everything created. Show it, get approval, save in the working directory. This file is the input to `/scg-ads:new-campaign` and `/scg-ads:update`.
+Fill the template with confirmed answers and the IDs of everything created. Show it, get approval, save it as `account-brief.md` in the account workspace. This file is the input to `/scg-ads:new-campaign` and `/scg-ads:update`.
 
 ## 5. Checklist for the human (always print at the end)
 Billing set up; auto-tagging on; conversion tags firing (Tag Assistant); account links approved on the partner side; policy-sensitive categories declared; who gets notifications.
