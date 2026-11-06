@@ -5,9 +5,9 @@
 # ///
 """Keyword Planner ideas -> CSV (read-only).
 
-Needs a developer token with Basic access or higher. On Explorer/test access the API
-returns DEVELOPER_TOKEN_NOT_APPROVED; this script says so and exits 4 so the skill can
-fall back to CSV / search-terms sources.
+Keyword Planner access depends on the API access level of your setup. When the API refuses
+(access not approved), this script says so and exits 4 so the skill can fall back to
+CSV / search-terms sources.
 
 Examples:
   keyword_ideas.py --customer 123-456-7890 --seeds "dental implants,teeth whitening" \
@@ -97,10 +97,10 @@ def main(argv=None, client=None) -> int:
         rows = [to_row(i) for i in ideas]
     except Exception as exc:  # noqa: BLE001
         text = format_error(exc)
-        if "DEVELOPER_TOKEN_NOT_APPROVED" in text:
+        if "NOT_APPROVED" in text:
             print(
-                "Keyword Planner is not available: DEVELOPER_TOKEN_NOT_APPROVED. Apply for Basic "
-                "access in Google Ads > Tools > API Center. Meanwhile use a CSV exported from the "
+                "Keyword Planner is not available with the current API access (the API reports it as not approved). "
+                "Meanwhile use a CSV exported from the "
                 "Keyword Planner UI / Ahrefs / Semrush, or account search terms.",
                 file=sys.stderr,
             )

@@ -10,7 +10,7 @@ Requires [`uv`](https://docs.astral.sh/uv/) and Claude Code.
 git clone https://github.com/sergiuscraft/google-ads-mcp.git
 git clone https://github.com/sergiuscraft/scg-ads-plugins-marketplace.git
 
-# 2. configure in YOUR terminal (nothing goes through the chat): sign-in, developer token, accounts
+# 2. configure in YOUR terminal (nothing goes through the chat): sign-in, accounts
 ./scg-ads-plugins-marketplace/plugins/scg-ads/scripts/configure.py init
 #    where to get each key/id: plugins/scg-ads/docs/CREDENTIALS.md
 

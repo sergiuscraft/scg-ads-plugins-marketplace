@@ -7,10 +7,9 @@
 
   configure.py init                       interactive wizard (does everything below in order)
   configure.py login --client-secret FILE sign in with Google in your browser; writes adc.json (mode 600)
-  configure.py token                      store/replace the developer token (hidden prompt)
   configure.py accounts                   (optional) discover accessible accounts from the API and save labels
-  configure.py check                      verify file modes, credentials, token, MCP server, one read call
-  configure.py show                       print the config with secrets masked
+  configure.py check                      verify file modes, credentials, MCP server, one read call
+  configure.py show                       print the config (it holds no secrets, only paths and ids)
   configure.py list                       accounts table (label, id, login id) - contains no secrets
   configure.py use [LABEL|ID]             choose the account you work with now (id need not be in the config)
   configure.py workspace [--customer X]   create/print that account's folder (briefs, CSVs, changelog)
@@ -46,10 +45,6 @@ def ask(prompt: str, default: str = "", secret: bool = False) -> str:
 def yes(prompt: str, default: bool = True) -> bool:
     ans = input(f"{prompt} [{'Y/n' if default else 'y/N'}]: ").strip().lower()
     return default if not ans else ans.startswith("y")
-
-
-def mask(value: str) -> str:
-    return "" if not value else ("*" * 6 + value[-2:] if len(value) > 8 else "******")
 
 
 def load_cfg() -> dict:
@@ -93,15 +88,6 @@ def cmd_login(args) -> int:
     save_cfg(cfg)
     print(f"Credentials written to {out} (mode 600).")
     print("You can now delete the downloaded client_secret file; it is not needed any more.")
-    return 0
-
-
-# ---------------- token ----------------
-def cmd_token(args) -> int:
-    cfg = load_cfg()
-    tok = ask("Developer token (input hidden)", cfg["credentials"].get("developer_token", ""), secret=True)
-    cfg["credentials"]["developer_token"] = tok
-    save_cfg(cfg)
     return 0
 
 
@@ -153,7 +139,7 @@ def cmd_accounts(args) -> int:
     for e in errors:
         print(f"  skipped {e}")
     if not accs:
-        print("No accounts found. Check credentials and developer token: configure.py check", file=sys.stderr)
+        print("No accounts found. Check credentials: configure.py check", file=sys.stderr)
         return 1
     clients = [a for a in accs if not a["manager"]] or accs
     print("\nReachable accounts:")
@@ -207,7 +193,6 @@ def cmd_check(args) -> int:
     line(adc.is_file(), "OAuth credentials file (adc_file)", "run: configure.py login --client-secret <file>")
     if adc.is_file():
         line(cfgmod.mode_ok(adc), "adc.json is private (mode 600)", f"chmod 600 {adc}")
-    line(bool(cfg["credentials"].get("developer_token")), "developer token present", "run: configure.py token")
     line(bool(cfgmod.digits(cfg["credentials"].get("login_customer_id"))), "login (manager) customer id set",
          "your manager (MCC) id, digits: edit config.toml or run configure.py init")
     fork = Path(str(cfg["mcp"].get("fork_dir", ""))).expanduser()
@@ -238,7 +223,6 @@ def cmd_check(args) -> int:
 def cmd_show(args) -> int:
     cfg = load_cfg()
     shown = json.loads(json.dumps(cfg))
-    shown["credentials"]["developer_token"] = mask(shown["credentials"].get("developer_token", ""))
     print(f"# {cfgmod.config_path()}")
     print(cfgmod.render(shown), end="")
     return 0
@@ -335,7 +319,7 @@ def cmd_path(args) -> int:
 def cmd_init(args) -> int:
     cfg = load_cfg()
     print(f"scg-ads setup. Config file: {cfgmod.config_path()}\nNothing you type here goes to any chat.\n")
-    print("Step 1/5 - MCP server (fork)")
+    print("Step 1/4 - MCP server (fork)")
     cur = cfg["mcp"].get("fork_dir", "")
     fork = Path(ask("Path to your clone of google-ads-mcp", cur)).expanduser()
     if fork and not (fork / "ads_mcp").is_dir():
@@ -344,7 +328,7 @@ def cmd_init(args) -> int:
             return 1
     cfg["mcp"]["fork_dir"] = str(fork)
 
-    print("\nStep 2/5 - Google sign-in (OAuth)")
+    print("\nStep 2/4 - Google sign-in (OAuth)")
     adc = Path(str(cfg["credentials"].get("adc_file") or cfgmod.default_adc_path())).expanduser()
     if adc.is_file() and not yes(f"  {adc} exists. Sign in again?", False):
         cfg["credentials"]["adc_file"] = str(adc)
@@ -357,16 +341,12 @@ def cmd_init(args) -> int:
         else:
             print("  Skipped. Later: configure.py login --client-secret <file>   (docs/CREDENTIALS.md)")
 
-    print("\nStep 3/5 - Developer token")
-    cfg["credentials"]["developer_token"] = ask(
-        "  Developer token (input hidden)", cfg["credentials"].get("developer_token", ""), secret=True)
-
-    print("\nStep 4/5 - Manager (MCC) customer id")
+    print("\nStep 3/4 - Manager (MCC) customer id")
     cfg["credentials"]["login_customer_id"] = cfgmod.digits(ask(
         "  Manager account id, digits (Enter to detect later)", cfg["credentials"].get("login_customer_id", "")))
     save_cfg(cfg)
 
-    print("\nStep 5/5 - Accounts (optional; keys above are the important part)")
+    print("\nStep 4/4 - Accounts (optional; keys above are the important part)")
     ids = ask("  10-digit customer id(s) you work with, comma separated (Enter = skip)", "")
     for raw in [x for x in ids.split(",") if cfgmod.digits(x)]:
         ns = argparse.Namespace(account=raw.strip(), name="", login="")
@@ -384,7 +364,6 @@ def main(argv=None) -> int:
     lg = sub.add_parser("login")
     lg.add_argument("--client-secret", required=True)
     lg.add_argument("--out")
-    sub.add_parser("token")
     sub.add_parser("accounts")
     ck = sub.add_parser("check")
     ck.add_argument("--mcp", action="store_true", help="also start the MCP server and call it")
@@ -400,7 +379,7 @@ def main(argv=None) -> int:
     ws.add_argument("--name")
     ws.add_argument("--login")
     args = p.parse_args(argv)
-    handlers = {"init": cmd_init, "login": cmd_login, "token": cmd_token, "accounts": cmd_accounts,
+    handlers = {"init": cmd_init, "login": cmd_login, "accounts": cmd_accounts,
                 "check": cmd_check, "show": cmd_show, "list": cmd_list, "use": cmd_use, "workspace": cmd_workspace, "path": cmd_path, None: cmd_init}
     try:
         return handlers[args.cmd](args)

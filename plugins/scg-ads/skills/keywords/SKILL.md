@@ -12,7 +12,7 @@ Used by `new-campaign`, `update`, or alone. First do step 0 of `new-campaign` (p
 AskUserQuestion (multi-select): 
 1. **I bring a CSV** (Keyword Planner UI, Ahrefs, Semrush, Ubersuggest...).
 2. **Account search terms** (AI pulls `search_term_view` via `search_search`).
-3. **Keyword Planner via script** (`keyword_ideas.py`) - works only after developer-token Basic access; if it exits 4 say so and drop to 1/2.
+3. **Keyword Planner via script** (`keyword_ideas.py`) - works only if the API allows Keyword Planner for this setup; if it exits 4 say so and drop to 1/2.
 4. **I'll research on my own** - show the sources sheet `${CLAUDE_PLUGIN_ROOT}/docs/KEYWORD-SOURCES.md` (links + the CSV format to bring back) and propose 10-20 seed phrases from the brief/landing page; pause until the human returns with a file.
 
 ## 2. Collect

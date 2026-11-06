@@ -11,7 +11,7 @@
 | AnswerThePublic | https://answerthepublic.com | questions and prepositions | CSV |
 | Ads Transparency Center | https://adstransparency.google.com | competitor ads, messages, themes | screenshots / notes |
 | Your account's search terms | via Claude (`search_search`) | proven, real queries | automatic |
-| Keyword Planner via API | `scripts/keyword_ideas.py` | same as the UI, scripted | needs developer-token Basic access |
+| Keyword Planner via API | `scripts/keyword_ideas.py` | same as the UI, scripted | only if the API allows Keyword Planner for your setup |
 
 ## CSV to bring back
 Anything with a header row works. Best columns: `keyword`, `volume` (avg monthly searches), `cpc` (or low/high bid), `competition`. Delimiters `, ; tab` and UTF-8 BOM are fine. One keyword per row. Claude will ask you to confirm the column mapping.

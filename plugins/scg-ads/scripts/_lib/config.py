@@ -2,13 +2,13 @@
 
 Default path: ~/.config/scg-ads/config.toml   (override: SCG_ADS_CONFIG)
 
-It holds paths, ids and the developer token so nothing has to be typed into chat or exported by
+It holds paths and ids so nothing has to be typed into chat or exported by
 hand. Real environment variables always win over the file. The OAuth refresh token lives in a
 separate adc.json (mode 600) that `configure.py login` writes.
 
 Schema (see config.example.toml):
   [mcp]          fork_dir
-  [credentials]  adc_file, developer_token, login_customer_id
+  [credentials]  adc_file, login_customer_id
   [defaults]     account            # the account you work with now: label or any customer id
   [workspace]    root               # per-account folders (default ~/ads-workspaces)
   [[accounts]]   label, customer_id, login_customer_id, name, currency, time_zone, notes
@@ -29,7 +29,6 @@ else:  # pragma: no cover
 
 ENV_MAP = {
     "GOOGLE_APPLICATION_CREDENTIALS": ("credentials", "adc_file"),
-    "GOOGLE_ADS_DEVELOPER_TOKEN": ("credentials", "developer_token"),
     "GOOGLE_ADS_LOGIN_CUSTOMER_ID": ("credentials", "login_customer_id"),
     "GOOGLE_ADS_MCP_FORK_DIR": ("mcp", "fork_dir"),
 }
@@ -133,7 +132,6 @@ def render(cfg: dict) -> str:
         "",
         "[credentials]",
         f"adc_file = {_q(get(cfg, 'credentials', 'adc_file', ''))}   # written by `configure.py login`",
-        f"developer_token = {_q(get(cfg, 'credentials', 'developer_token', ''))}",
         f"login_customer_id = {_q(get(cfg, 'credentials', 'login_customer_id', ''))}   # your manager (MCC) id, digits only",
         "",
         "[defaults]",

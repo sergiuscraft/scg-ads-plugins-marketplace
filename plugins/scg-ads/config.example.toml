@@ -6,7 +6,6 @@ fork_dir = "~/google-ads-mcp"            # your clone of https://github.com/serg
 
 [credentials]
 adc_file = "~/.config/scg-ads/adc.json"  # written by `configure.py login` (holds the OAuth refresh token)
-developer_token = ""                     # Google Ads manager > Tools > API Center
 login_customer_id = ""                   # your manager (MCC) account id, digits only
 
 [defaults]

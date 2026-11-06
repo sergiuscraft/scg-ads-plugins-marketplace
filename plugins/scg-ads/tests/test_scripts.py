@@ -218,7 +218,7 @@ def cfg_env(tmp_path, monkeypatch):
 def _sample():
     return {
         "mcp": {"fork_dir": "/opt/fork"},
-        "credentials": {"adc_file": "/x/adc.json", "developer_token": 'tok"en', "login_customer_id": "7000000001"},
+        "credentials": {"adc_file": "/x/adc.json", "login_customer_id": "7000000001"},
         "defaults": {"account": "clinic"},
         "accounts": [
             {"label": "clinic", "customer_id": "1111111111", "login_customer_id": "", "name": "Clinic \\ A"},
@@ -232,7 +232,7 @@ def test_config_roundtrip_private_mode_and_escaping(cfg_env):
     assert stat.S_IMODE(os.stat(cfg_env).st_mode) == 0o600
     assert stat.S_IMODE(os.stat(cfg_env.parent).st_mode) == 0o700
     back = cfgmod.load()
-    assert back["credentials"]["developer_token"] == 'tok"en' and back["accounts"][0]["name"] == "Clinic \\ A"
+    assert back["credentials"]["login_customer_id"] == "7000000001" and back["accounts"][0]["name"] == "Clinic \\ A"
     assert cfgmod.mode_ok(cfg_env)
 
 
@@ -252,7 +252,6 @@ def test_apply_env_fills_missing_but_real_env_wins(cfg_env, monkeypatch):
     monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "5555555555")
     cfgmod.apply_env()
     assert os.environ["GOOGLE_ADS_LOGIN_CUSTOMER_ID"] == "5555555555"
-    assert os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"] == 'tok"en'
     assert os.environ["GOOGLE_APPLICATION_CREDENTIALS"] == "/x/adc.json"
 
 
@@ -262,11 +261,11 @@ def test_refuses_to_write_secrets_inside_a_git_repo(tmp_path):
         cfgmod.write_private(tmp_path / "sub" / "config.toml", "x")
 
 
-def test_show_masks_token(cfg_env, capsys):
+def test_show_prints_config_without_any_token_field(cfg_env, capsys):
     cfgmod.save(_sample())
     assert configure.main(["show"]) == 0
     out = capsys.readouterr().out
-    assert "tok" + chr(34) not in out and "******" in out and "developer_token" in out
+    assert "adc_file" in out and "login_customer_id" in out and "token" not in out.lower().replace("adc.json", "")
 
 
 def test_discover_with_fake_client():
@@ -354,9 +353,9 @@ def test_list_includes_workspace_only_accounts(cfg_env, tmp_path, capsys):
     assert rows["9998887777"][2] == "7000000009" and rows["9998887777"][5] == "Ad hoc"
 
 
-def test_config_without_any_accounts_is_valid(cfg_env, capsys):
-    cfgmod.save({"credentials": {"developer_token": "x"}})
-    assert cfgmod.load()["credentials"]["developer_token"] == "x"
+def test_config_without_any_accounts_is_valid(cfg_env, tmp_path, capsys):
+    cfgmod.save({"credentials": {"adc_file": "/x/adc.json"}, "workspace": {"root": str(tmp_path / "ws-empty")}})
+    assert cfgmod.load()["credentials"]["adc_file"] == "/x/adc.json"
     assert configure.main(["list"]) == 1
     assert "10-digit" in capsys.readouterr().err
 
@@ -419,7 +418,7 @@ def test_lint_catches_problems(img_dir):
 def _client():
     from google.ads.googleads.client import GoogleAdsClient
     from google.oauth2.credentials import Credentials
-    return GoogleAdsClient(credentials=Credentials(token="x"), developer_token="x", use_proto_plus=True)
+    return GoogleAdsClient(credentials=Credentials(token="x"), use_proto_plus=True)
 
 
 @pytest.mark.parametrize("kind", cco.TYPES)

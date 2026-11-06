@@ -3,7 +3,6 @@
 
 Values come from the user config file (_lib/config.py, filled by `configure.py`) and/or env:
   GOOGLE_APPLICATION_CREDENTIALS   ADC json (authorized_user) with the adwords scope
-  GOOGLE_ADS_DEVELOPER_TOKEN       optional here, required for Keyword Planner etc.
   GOOGLE_ADS_LOGIN_CUSTOMER_ID     manager account id (overridable with --login-customer)
 """
 
@@ -27,9 +26,6 @@ def get_client(login_customer_id=None):
 
     credentials, _ = google.auth.default(scopes=[ADS_SCOPE])
     args = {"credentials": credentials, "use_proto_plus": True}
-    token = os.environ.get("GOOGLE_ADS_DEVELOPER_TOKEN")
-    if token:
-        args["developer_token"] = token
     login = login_customer_id or os.environ.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID")
     if login:
         args["login_customer_id"] = clean_id(login)

@@ -5,7 +5,7 @@ MCP = google-ads server (fork). SCRIPT = `${CLAUDE_PLUGIN_ROOT}/scripts/`. Statu
 | Need | How | Status |
 |---|---|---|
 | List accounts, any read/report | MCP `customers_list_accessible_customers`, `search_search`, `metadata_get_resource_metadata` | ready |
-| Keyword ideas + volumes | SCRIPT `keyword_ideas.py` (needs Basic access) or CSV / search terms | ready (live-gated) |
+| Keyword ideas + volumes | SCRIPT `keyword_ideas.py` (only if the API allows Keyword Planner) or CSV / search terms | ready (live-gated) |
 | Bulk ad groups / keywords / negatives from CSV | SCRIPT `import_csv.py` | ready |
 | Shared negative lists | MCP `shared_sets_*` | ready |
 | Create campaign (Search) | MCP `campaigns_create_campaign` | ready |

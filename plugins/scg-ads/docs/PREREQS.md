@@ -5,11 +5,10 @@ Clone `https://github.com/sergiuscraft/google-ads-mcp.git`, then run `scripts/co
 If you already registered a `google-ads` server in your own MCP config, disable one of them to avoid duplicate tool names.
 
 ## 2. Environment overrides
-Real env vars win over the file: `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, `GOOGLE_ADS_DEVELOPER_TOKEN`, `GOOGLE_ADS_MCP_FORK_DIR`, `SCG_ADS_CONFIG` (config path). Scripts run with `uv run <script>`; dependencies are declared inline (PEP 723).
+Real env vars win over the file: `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, `GOOGLE_ADS_MCP_FORK_DIR`, `SCG_ADS_CONFIG` (config path). Scripts run with `uv run <script>`; dependencies are declared inline (PEP 723).
 
-## 3. Developer-token access level (important)
-- Explorer access: low daily operation limit, **Keyword Planner returns `DEVELOPER_TOKEN_NOT_APPROVED`**. `keyword_ideas.py` exits with code 4 and the skills fall back to CSV / search terms.
-- To unlock Keyword Planner and higher limits: apply for **Basic access** in Google Ads (manager account) > Tools > API Center. This is a human action.
+## 3. Keyword Planner availability
+Keyword Planner depends on the API access level of your setup. When the API refuses it, `keyword_ideas.py` exits with code 4 and the skills fall back to CSV / search terms.
 
 ## 4. Known untested-live fork tools
 `shared_sets_detach_negative_keyword_list`, `budgets_set_campaign_budget`, `ads_replace_responsive_search_ad`, ad-group-level `keywords_add_negative_keywords`. First use: verify with a read-back.
